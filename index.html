@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Memory Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+      background-color: #f9f9f9;
+    }
+    .game-container {
+      max-width: 400px;
+      margin: 20px auto;
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .card {
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #007bff;
+      color: white;
+      font-size: 24px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: transform 0.3s;
+    }
+    .card.flipped {
+      background: #f1f1f1;
+      color: black;
+      transform: rotateY(180deg);
+    }
+    .card.matched {
+      background: #28a745;
+      color: white;
+      pointer-events: none;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <h1>Memory Game</h1>
+    <p>Moves: <span id="moves">0</span></p>
+    <p>Best Score: <span id="best-score">--</span></p>
+    <div class="grid" id="game-grid"></div>
+    <button id="reset-btn" style="display: none;">Play Again</button>
+  </div>
+  <script>
+    const symbols = ['🌟', '🚀', '🍎', '🐶', '🚲', '🌈', '🍕', '🎉'];
+    let cards = [];
+    let flippedCards = [];
+    let moves = 0;
+    let bestScore = localStorage.getItem('memoryGame_bestScore') || null;
+
+    const grid = document.getElementById('game-grid');
+    const movesEl = document.getElementById('moves');
+    const bestScoreEl = document.getElementById('best-score');
+    const resetBtn = document.getElementById('reset-btn');
+
+    const updateScoreDisplay = () => {
+      movesEl.textContent = moves;
+      bestScoreEl.textContent = bestScore !== null ? bestScore : '--';
+    };
+
+    const generateCards = () => {
+      return [...symbols, ...symbols]
+        .sort(() => Math.random() - 0.5)
+        .map((symbol, index) => ({
+          id: index,
+          symbol,
+          isFlipped: false,
+          isMatched: false,
+        }));
+    };
+
+    const renderCards = () => {
+      grid.innerHTML = '';
+      cards.forEach((card) => {
+        const cardEl = document.createElement('div');
+        cardEl.className = card ${card.isFlipped ? 'flipped' : ''} ${card.isMatched ? 'matched' : ''};
+        cardEl.textContent = card.isFlipped || card.isMatched ? card.symbol : '?';
+        cardEl.onclick = () => handleCardClick(card);
+        grid.appendChild(cardEl);
+      });
+    };
+
+    const handleCardClick = (clickedCard) => {
+      if (clickedCard.isMatched || clickedCard.isFlipped || flippedCards.length === 2) return;
+
+      clickedCard.isFlipped = true;
+      flippedCards.push(clickedCard);
+      moves++;
+      updateScoreDisplay();
+      renderCards();
+
+      if (flippedCards.length === 2) {
+        const [firstCard, secondCard] = flippedCards;
+
+        setTimeout(() => {
+          if (firstCard.symbol === secondCard.symbol) {
+            firstCard.isMatched = true;
+            secondCard.isMatched = true;
+
+            if (cards.every((card) => card.isMatched)) {
+              if (bestScore === null || moves < bestScore) {
+                bestScore = moves;
+                localStorage.setItem('memoryGame_bestScore', bestScore);
+              }
+              resetBtn.style.display = 'block';
+            }
+          } else {
+            firstCard.isFlipped = false;
+            secondCard.isFlipped = false;
+          }
+          flippedCards = [];
+          renderCards();
+        }, 1000);
+      }
+    };
+
+    const resetGame = () => {
+      cards = generateCards();
+      flippedCards = [];
+      moves = 0;
+      resetBtn.style.display = 'none';
+      updateScoreDisplay();
+      renderCards();
+    };
+
+    resetBtn.onclick = resetGame;
+
+    // Initialize game
+    cards = generateCards();
+    updateScoreDisplay();
+    renderCards();
+  </script>
+</body>
+</html>
